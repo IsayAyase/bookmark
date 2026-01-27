@@ -6,18 +6,15 @@ import { Button } from "./ui/button";
 export default function Navbar() {
   return (
     <div className="flex items-center justify-between mb-8">
-      <div>
+      <Link href="/dashboard">
         <h1 className="text-3xl font-bold">Task Manager</h1>
         <p className="text-muted-foreground">Manage your tasks efficiently</p>
-      </div>
+      </Link>
+
       <div className="flex items-center gap-2">
         <TaskDialog />
         <Link href="/profile">
-          <Button
-            aria-label="Profile"
-            size={'icon'}
-            variant={'outline'}
-          >
+          <Button aria-label="Profile" size={"icon"} variant={"outline"}>
             <UserIcon />
           </Button>
         </Link>

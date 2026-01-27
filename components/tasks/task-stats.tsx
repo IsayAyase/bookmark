@@ -82,11 +82,13 @@ export function TaskStats() {
         </div>
       )}
 
-      {stats.total > 0 && (
-        <div className="text-sm text-muted-foreground w-fit">
-          Completion rate: {Math.round((stats.completed / stats.total) * 100)}%
-        </div>
-      )}
+      <div className="text-sm text-muted-foreground w-fit">
+        Completion rate:{" "}
+        {stats.total > 0
+          ? Math.round((stats.completed / stats.total) * 100)
+          : "0"}
+        %
+      </div>
     </div>
   );
 }

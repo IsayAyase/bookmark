@@ -20,8 +20,10 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const { signIn, loading, error } = useAuthStore();
+  const { signIn, resetPassword, loading, error } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
 
   const {
     register,
