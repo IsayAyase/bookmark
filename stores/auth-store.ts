@@ -1,15 +1,16 @@
+import { supabase } from '@/lib/supabase'
+import { AuthState, User } from '@/types'
+import { AuthError } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { User, AuthState } from '@/types'
-import { supabase } from '@/lib/supabase'
 
 interface AuthStore extends AuthState {
-  signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: any }>
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>
   initializeAuth: () => Promise<void>
-  updateDisplayName: (displayName: string) => Promise<{ error: any }>
+  updateDisplayName: (displayName: string) => Promise<{ error: AuthError | null }>
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -22,9 +23,9 @@ export const useAuthStore = create<AuthStore>()(
       initializeAuth: async () => {
         try {
           set({ loading: true, error: null })
-          
+
           const { data: { session }, error } = await supabase.auth.getSession()
-          
+
           if (error) {
             set({ error: error.message, loading: false })
             return
@@ -42,9 +43,9 @@ export const useAuthStore = create<AuthStore>()(
             set({ user: null, loading: false, error: null })
           }
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Unknown error', 
-            loading: false 
+          set({
+            error: error instanceof Error ? error.message : 'Unknown error',
+            loading: false
           })
         }
       },
@@ -67,14 +68,14 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           const msg = error instanceof Error ? error.message : 'Update failed'
           set({ error: msg, loading: false })
-          return { error: msg }
+          return { error: new AuthError(msg) }
         }
       },
 
       signIn: async (email: string, password: string) => {
         try {
           set({ loading: true, error: null })
-          
+
           const { error } = await supabase.auth.signInWithPassword({
             email,
             password
@@ -90,14 +91,14 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
           set({ error: errorMessage, loading: false })
-          return { error: errorMessage }
+          return { error: new AuthError(errorMessage) }
         }
       },
 
       signUp: async (email: string, password: string, displayName?: string) => {
         try {
           set({ loading: true, error: null })
-          
+
           const { error } = await supabase.auth.signUp({
             email,
             password,
@@ -118,7 +119,7 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
           set({ error: errorMessage, loading: false })
-          return { error: errorMessage }
+          return { error: new AuthError(errorMessage) }
         }
       },
 
@@ -137,7 +138,7 @@ export const useAuthStore = create<AuthStore>()(
           const { error } = await supabase.auth.resetPasswordForEmail(email)
           return { error }
         } catch (error) {
-          return { error: error instanceof Error ? error.message : 'Password reset failed' }
+          return { error: new AuthError(error instanceof Error ? error.message : 'Reset password failed') }
         }
       }
     }),
@@ -151,7 +152,7 @@ export const useAuthStore = create<AuthStore>()(
 // Set up auth state listener
 supabase.auth.onAuthStateChange(async (event, session) => {
   const { initializeAuth } = useAuthStore.getState()
-  
+
   if (event === 'SIGNED_IN' && session?.user) {
     const user: User = {
       id: session.user.id,

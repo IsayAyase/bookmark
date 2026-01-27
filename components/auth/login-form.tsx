@@ -20,16 +20,14 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const { signIn, resetPassword, loading, error } = useAuthStore();
+  const { signIn, loading, error } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetMsg, setResetMsg] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setError,
+    setError
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
