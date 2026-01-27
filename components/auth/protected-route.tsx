@@ -1,42 +1,41 @@
-'use client'
+"use client";
 
-import { useEffect, ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useAuthStore } from "@/stores/auth-store";
+import { useRouter } from "next/navigation";
+import { ReactNode, useEffect } from "react";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   redirectTo?: string;
 }
 
-export function ProtectedRoute({ 
-  children, 
-  redirectTo = '/login' 
+export function ProtectedRoute({
+  children,
+  redirectTo = "/login",
 }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
+  const { user, loading } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push(redirectTo)
+      router.push(redirectTo);
     }
-  }, [user, loading, router, redirectTo])
+  }, [user, loading, router, redirectTo]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <div className="text-center space-y-4">
           <LoadingSpinner size="lg" />
-          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }

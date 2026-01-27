@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '../contexts/auth-context'
+import { useEffect } from 'react'
 import { LoadingSpinner } from '../components/ui/loading-spinner'
+import { useAuthStore } from '../stores/auth-store'
 
 export default function Home() {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
@@ -20,10 +20,9 @@ export default function Home() {
   }, [user, loading, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-dvh flex items-center justify-center">
       <div className="text-center space-y-4">
         <LoadingSpinner size="lg" />
-        <p className="text-muted-foreground">Loading...</p>
       </div>
     </div>
   )

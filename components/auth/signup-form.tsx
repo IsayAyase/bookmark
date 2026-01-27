@@ -1,56 +1,64 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import Link from 'next/link'
-import { useAuth } from '@/contexts/auth-context'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useAuthStore } from "@/stores/auth-store";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-  displayName: z.string().optional()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
+const signupSchema = z
+  .object({
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+    displayName: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
-type SignupFormData = z.infer<typeof signupSchema>
+type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
-  const { signUp, loading, error } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
+  const { signUp, error } = useAuthStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const [successMessage, setSuccessMessage] = useState("");
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setError
+    setError,
   } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema)
-  })
+    resolver: zodResolver(signupSchema),
+  });
 
   const onSubmit = async (data: SignupFormData) => {
-    setIsSubmitting(true)
-    setSuccessMessage('')
-    
-    const result = await signUp(data.email, data.password, data.displayName)
-    
+    setIsSubmitting(true);
+    setSuccessMessage("");
+
+    const result = await signUp(data.email, data.password, data.displayName);
+
     if (result.error) {
-      setError('root', { message: typeof result.error === 'string' ? result.error : 'Signup failed' })
+      setError("root", {
+        message:
+          typeof result.error === "string" ? result.error : "Signup failed",
+      });
     } else {
-      setSuccessMessage('Account created successfully! Please check your email to verify your account.')
+      router.push('/login');
+      return;
     }
-    
-    setIsSubmitting(false)
-  }
+
+    setIsSubmitting(false);
+  };
 
   if (successMessage) {
     return (
@@ -63,7 +71,7 @@ export function SignupForm() {
           <Button className="w-full">Go to Login</Button>
         </Link>
       </div>
-    )
+    );
   }
 
   return (
@@ -80,11 +88,13 @@ export function SignupForm() {
             id="displayName"
             type="text"
             placeholder="Enter your name"
-            {...register('displayName')}
+            {...register("displayName")}
             disabled={isSubmitting}
           />
           {errors.displayName && (
-            <p className="text-sm text-destructive">{errors.displayName.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.displayName.message}
+            </p>
           )}
         </div>
 
@@ -94,7 +104,7 @@ export function SignupForm() {
             id="email"
             type="email"
             placeholder="Enter your email"
-            {...register('email')}
+            {...register("email")}
             disabled={isSubmitting}
           />
           {errors.email && (
@@ -108,11 +118,13 @@ export function SignupForm() {
             id="password"
             type="password"
             placeholder="Enter your password"
-            {...register('password')}
+            {...register("password")}
             disabled={isSubmitting}
           />
           {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.password.message}
+            </p>
           )}
         </div>
 
@@ -122,11 +134,13 @@ export function SignupForm() {
             id="confirmPassword"
             type="password"
             placeholder="Confirm your password"
-            {...register('confirmPassword')}
+            {...register("confirmPassword")}
             disabled={isSubmitting}
           />
           {errors.confirmPassword && (
-            <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.confirmPassword.message}
+            </p>
           )}
         </div>
 
@@ -136,18 +150,14 @@ export function SignupForm() {
           </div>
         )}
 
-        <Button 
-          type="submit" 
-          className="w-full" 
-          disabled={isSubmitting}
-        >
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <LoadingSpinner size="sm" />
               Creating account...
             </div>
           ) : (
-            'Create Account'
+            "Create Account"
           )}
         </Button>
       </form>
@@ -159,5 +169,5 @@ export function SignupForm() {
         </Link>
       </div>
     </div>
-  )
+  );
 }

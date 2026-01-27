@@ -9,25 +9,23 @@ import { TaskForm } from './task-form'
 
 interface TaskDialogProps {
   task?: Task;
-  onSuccess: () => void;
   children?: React.ReactNode;
 }
 
-export function TaskDialog({ task, onSuccess, children }: TaskDialogProps) {
+export function TaskDialog({ task, children }: TaskDialogProps) {
   const [open, setOpen] = useState(false)
 
   const handleSuccess = () => {
     setOpen(false)
-    onSuccess()
   }
 
   const defaultTrigger = task ? (
-    <Button variant="ghost" size="sm">
-      <Edit className="w-4 h-4" />
+    <Button variant="outline" size="icon">
+      <Edit />
     </Button>
   ) : (
-    <Button className="flex items-center gap-2">
-      <Plus className="w-4 h-4" />
+    <Button variant={'outline'} className="flex items-center gap-2">
+      <Plus />
       New Task
     </Button>
   )

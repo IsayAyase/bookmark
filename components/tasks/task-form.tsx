@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { supabase } from "@/lib/supabase";
+import { useAppStore } from "@/stores/app-store";
 import { Task } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -34,6 +34,7 @@ interface TaskFormProps {
 export function TaskForm({ task, onSuccess, onCancel }: TaskFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const { createTask, updateTask } = useAppStore();
 
   const {
     register,
@@ -66,36 +67,15 @@ export function TaskForm({ task, onSuccess, onCancel }: TaskFormProps) {
     setError("");
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError("User not authenticated");
-        return;
-      }
-
-      const taskData = {
-        user_id: user.id,
-        title: data.title,
-        description: data.description || null,
-        priority: data.priority,
-        status: data.status,
-        due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
-      };
-
       let result;
       if (task) {
-        result = await supabase
-          .from("tasks")
-          .update(taskData)
-          .eq("id", task.id)
-          .eq("user_id", user.id);
+        result = await updateTask(task.id, data);
       } else {
-        result = await supabase.from("tasks").insert(taskData);
+        result = await createTask(data);
       }
 
       if (result.error) {
-        setError(result.error.message);
+        setError(result.error);
       } else {
         onSuccess();
       }

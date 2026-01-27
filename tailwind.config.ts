@@ -18,12 +18,12 @@ export default {
           '100%': { opacity: '0' },
         },
         'zoom-in': {
-          '0%': { transform: 'translate(-50%, -50%) scale(0.95)', opacity: '0' },
-          '100%': { transform: 'translate(-50%, -50%) scale(1)', opacity: '1' },
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
         },
         'zoom-out': {
-          '0%': { transform: 'translate(-50%, -50%) scale(1)', opacity: '1' },
-          '100%': { transform: 'translate(-50%, -50%) scale(0.95)', opacity: '0' },
+          '0%': { transform: 'scale(1)', opacity: '1' },
+          '100%': { transform: 'scale(0.95)', opacity: '0' },
         },
         'slide-in-from-left': {
           '0%': { transform: 'translateX(-50%) translateY(-48%)', opacity: '0' },

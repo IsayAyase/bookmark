@@ -1,45 +1,53 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import Link from 'next/link'
-import { useAuth } from '@/contexts/auth-context'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useAuthStore } from "@/stores/auth-store";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters')
-})
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
-type LoginFormData = z.infer<typeof loginSchema>
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const { signIn, loading, error } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { signIn, loading, error } = useAuthStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setError
+    setError,
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema)
-  })
+    resolver: zodResolver(loginSchema),
+  });
+
+  const router = useRouter();
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsSubmitting(true)
-    const result = await signIn(data.email, data.password)
-    
+    setIsSubmitting(true);
+    const result = await signIn(data.email, data.password);
+
     if (result.error) {
-      setError('root', { message: typeof result.error === 'string' ? result.error : 'Login failed' })
+      setError("root", {
+        message:
+          typeof result.error === "string" ? result.error : "Login failed",
+      });
+    } else {
+      router.push('/dashboard')
     }
-    setIsSubmitting(false)
-  }
+    setIsSubmitting(false);
+  };
 
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-6">
@@ -55,7 +63,7 @@ export function LoginForm() {
             id="email"
             type="email"
             placeholder="Enter your email"
-            {...register('email')}
+            {...register("email")}
             disabled={isSubmitting}
           />
           {errors.email && (
@@ -69,11 +77,13 @@ export function LoginForm() {
             id="password"
             type="password"
             placeholder="Enter your password"
-            {...register('password')}
+            {...register("password")}
             disabled={isSubmitting}
           />
           {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.password.message}
+            </p>
           )}
         </div>
 
@@ -83,18 +93,14 @@ export function LoginForm() {
           </div>
         )}
 
-        <Button 
-          type="submit" 
-          className="w-full" 
-          disabled={isSubmitting}
-        >
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <LoadingSpinner size="sm" />
               Signing in...
             </div>
           ) : (
-            'Sign In'
+            "Sign In"
           )}
         </Button>
       </form>
@@ -107,13 +113,13 @@ export function LoginForm() {
       </div>
 
       <div className="text-center">
-        <Link 
-          href="/reset-password" 
+        <Link
+          href="/reset-password"
           className="text-sm text-primary hover:underline"
         >
           Forgot your password?
         </Link>
       </div>
     </div>
-  )
+  );
 }
