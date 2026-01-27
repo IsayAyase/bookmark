@@ -2,174 +2,93 @@
 
 A full-stack Task Management web application built with Next.js, TypeScript, and Tailwind CSS.
 
-## 🚀 Features
+## Features
 
-- User authentication (email/password)
+- User authentication (email/password) (working on reset...)
 - Create, read, update, and delete tasks
 - User-specific task isolation
 - Responsive design (mobile + desktop)
-- Real-time updates
 - Modern UI with Tailwind CSS
 
-## 🛠 Technical Stack
+## Technical Stack
 
 - **Frontend**: Next.js 16.1.4 with TypeScript
 - **Styling**: Tailwind CSS v4
-- **Database**: Firebase/Supabase
-- **Authentication**: Firebase Auth/Supabase Auth
-- **Deployment**: Vercel/Firebase/Supabase
+- **Database**: Supabase
+- **Authentication**: Supabase Auth
+- **Deployment**: Vercel
 
-## 📋 Mandatory Design & Thinking Questions
+## Mandatory Design & Thinking Questions
 
-### 1. Why did you choose Firebase or Supabase for this assignment?
+### 1. Why did you choose Firebase or Supabase for this assignment? What factors would make you choose the other option in a real production system?
 
-For this assignment, I would choose **Supabase** for the following reasons:
+I chose Supabase because:
 
-- **PostgreSQL Foundation**: Supabase uses PostgreSQL, which provides superior SQL capabilities, complex queries, and better data integrity compared to Firebase's NoSQL Firestore
-- **Open Source**: Being open-source provides more transparency, community contributions, and potential for self-hosting
-- **Built-in Authentication**: Supabase Auth is comprehensive and integrates seamlessly with the database
-- **REST API Generation**: Automatic REST API generation from database schema reduces development time
-- **Real-time Capabilities**: Built-in real-time subscriptions without additional configuration
-- **Better TypeScript Support**: Native TypeScript support with auto-generated types
+- I'm more comfortable with NoSQL (MongoDB), but I deliberately chose Supabase to gain hands-on experience with SQL/PostgreSQL. This assignment was a good opportunity to work with relational data and learn proper SQL patterns.
+- Row-Level Security (RLS) policies in Postgres handle the "users can only see their own tasks" requirement elegantly at the database level, rather than handling it in application logic.
+- It's open-source, so I'm learning skills that aren't locked to one vendor.
 
-### 2. What factors would make you choose the other option in a real production system?
+I'd choose the other option (Firebase) if:
 
-I would choose **Firebase** in these scenarios:
+- Building a mobile-first app where Firebase's native SDKs (iOS/Android) provide better DX
+- Need real-time sync across devices with minimal setup (Firebase Realtime Database is incredibly simple)
+- Team has zero SQL experience and speed-to-market is critical
+- Heavy integration with Google ecosystem (Analytics, Cloud Functions, etc.)
+- Project requirements are simple enough that Firestore's document model fits naturally without needing complex joins
 
-- **Google Cloud Ecosystem**: If the organization heavily uses Google Cloud services, Firebase provides seamless integration
-- **Mobile-First Applications**: Firebase has superior mobile SDKs and offline capabilities
-- **Rapid Prototyping**: Firebase's real-time database is simpler for quick iterations without complex schemas
-- **Machine Learning Integration**: Firebase ML Kit provides ready-to-use ML capabilities
-- **Existing Expertise**: If the team has extensive Firebase experience
-- **Enterprise Support**: Google's enterprise support and SLA guarantees
-- **Global Scaling**: Firebase's global CDN and edge locations for better performance worldwide
+### 2. If this app suddenly gets 10,000 active users, what are the first 3 problems or bottlenecks you expect, and how would you address them?
 
-### 3. If this app suddenly gets 10,000 active users, what are the first 3 problems or bottlenecks you expect, and how would you address them?
+#### **Problem 1**: Database Query Performance
 
-#### **Problem 1: Database Query Performance**
-- **Issue**: With 10,000 users creating multiple tasks, database queries would become slow, especially fetching user-specific tasks
-- **Solution**: 
-  - Implement proper database indexing on userId fields
-  - Add pagination to limit result sets
-  - Consider database read replicas for load distribution
-  - Implement query optimization and caching strategies
+- **Issue**: Fetching all tasks for a user without indexes or pagination will slow down.
 
-#### **Problem 2: Authentication Service Overload**
-- **Issue**: High concurrent login attempts and token validations would strain the authentication service
-- **Solution**:
-  - Implement session caching with Redis
-  - Use JWT with appropriate expiration times
-  - Add rate limiting to prevent brute force attacks
-  - Consider load balancer for auth endpoints
+- **Fix**: Add database indexes on user_id, implement pagination (load 20 tasks at a time), add proper query optimization
 
-#### **Problem 3: Real-time Update Scalability**
-- **Issue**: Real-time subscriptions would create excessive WebSocket connections
-- **Solution**:
-  - Implement connection pooling
-  - Use efficient update batching strategies
-  - Consider moving to server-sent events (SSE) for certain updates
-  - Implement smart reconnection logic with exponential backoff
+#### **Problem 2**: Auth Rate Limiting
 
-### 4. One design or technical decision you made that you know is not ideal, but accepted due to time constraints.
+- **Issue**: Login/signup endpoints could be hammered, causing service degradation or costs
+- **Fix**: Implement rate limiting on auth endpoints, add CAPTCHA for signup, use edge caching where possible
 
-**Decision**: Using client-side state management instead of a robust server-side caching layer.
+#### **Problem 3**: API Costs & Cold Starts
 
-**Why it's not ideal**: 
-- Potential for stale data across multiple browser tabs
-- Increased API calls for the same data
-- No centralized cache invalidation strategy
+- **Issue**: Serverless functions (Vercel/Firebase) have cold starts; database read/write costs spike
+- **Fix**: Move frequently accessed data to Redis/cache layer, batch operations where possible, optimize queries to reduce reads
 
-**Time constraint justification**:
-- Implementing Redis or similar caching solution requires additional infrastructure setup
-- Server-side caching adds complexity to the deployment pipeline
-- For a task management app with moderate usage, client-side state provides adequate user experience
-- Can be incrementally improved post-launch based on actual usage patterns
+### 3. One design or technical decision you made that you know is not ideal, but accepted due to time constraints.
 
-### 5. How would you modify the system if:
+Multiple gaps I accepted for time:
 
-#### **Firebase/Supabase is removed**
+- No skeleton loading - Just using spinners instead of skeleton screens. Looks less polished when loading data. Should add: Skeleton components that match the actual layout.
+- Basic caching - Cache might show old data if someone updates tasks from another device. Should add: Proper cache invalidation using React Query or similar.
+- No password reset - Users can't recover their account if they forget their password. Should add: Email-based password reset flow.
 
-**Architecture Changes**:
-- Implement custom PostgreSQL database with connection pooling
-- Build REST API using Node.js/Express or Next.js API routes
-- Implement JWT-based authentication with bcrypt for password hashing
-- Use Prisma or similar ORM for database operations
-- Set up session management with Redis
-- Implement database migrations and backup strategies
+#### 4. How would you modify the system if:
 
-**Code Structure**:
-```
-src/
-├── api/
-│   ├── auth/
-│   ├── tasks/
-│   └── middleware/
-├── database/
-│   ├── migrations/
-│   └── seeds/
-└── services/
-    ├── auth.ts
-    └── database.ts
-```
+**a) Supabase is removed**
 
-#### **Role-based access is introduced**
+- Set up own PostgreSQL database (Neon, Railway, or self-hosted)
+- Build custom API routes in Next.js for auth and CRUD
+- Use bcrypt to hash passwords, JWT for sessions
+- Use Prisma or Drizzle ORM to talk to the database
+- Handle user permissions in API middleware instead of RLS
 
-**Database Schema Changes**:
-```sql
-ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
-CREATE TABLE user_roles (
-  id UUID PRIMARY KEY,
-  name VARCHAR(50) UNIQUE NOT NULL,
-  permissions JSONB
-);
-```
+**b) Role-based access is introduced (Admin, User, Guest)**
 
-**Implementation**:
-- Add role middleware to API routes
-- Implement permission checking decorators
-- Create role management UI for admins
-- Add row-level security policies
-- Update authentication to include role claims in JWT tokens
+- Add role column to users table
+- Update RLS policies to check role (admins see all tasks, users see only theirs)
+- Add middleware to block actions based on role
+- Create admin page to manage users and their roles
+- Guests (if there) can only view, not create or delete
 
-**Code Changes**:
-- Protected route wrappers with role checks
-- Permission-based component visibility
-- Audit logging for role changes
-- Role hierarchy enforcement
+**c) Activity/audit logs are required**
 
-#### **Activity/audit logs are required**
+- Create audit_logs table: user_id, action, task_id, timestamp, details
+- Log every create/update/delete ops on request
+- Store what changed (old value → new value)
+- Add admin page to view logs and filter by user/date
+- Auto-delete old logs after 90 days to save space
 
-**Database Schema**:
-```sql
-CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  action VARCHAR(50) NOT NULL,
-  resource_type VARCHAR(50) NOT NULL,
-  resource_id UUID,
-  old_values JSONB,
-  new_values JSONB,
-  ip_address INET,
-  user_agent TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-**Implementation**:
-- Middleware to log all CRUD operations
-- Event-driven architecture for real-time logging
-- Background job processing for log aggregation
-- Log retention policies and archiving
-- Searchable log interface for administrators
-- Compliance features (GDPR, SOX)
-
-**Technical Considerations**:
-- Asynchronous logging to avoid performance impact
-- Log encryption for sensitive data
-- Immutable logs for forensic analysis
-- Integration with SIEM systems
-
-## 🚀 Getting Started
+## Getting Started
 
 First, run the development server:
 
@@ -177,16 +96,10 @@ First, run the development server:
 npm run dev
 ```
 
+or
+
+```bash
+bun run dev
+```
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## 📝 Development Notes
-
-This project is structured following Next.js 13+ App Router conventions with TypeScript for type safety and Tailwind CSS for styling.
-
-## 🚀 Deployment
-
-The application is designed to be deployed on Vercel for optimal Next.js performance, with database hosting on Supabase or Firebase.
-
-## 📄 License
-
-This project is licensed under the MIT License.
