@@ -27,7 +27,7 @@ export default function ProfilePage() {
     }
     const res = await updateDisplayName(name);
     if (res?.error) {
-      setStatus(res.error as string);
+      setStatus(res.error.message);
     } else {
       setStatus("Profile updated");
     }
@@ -41,7 +41,7 @@ export default function ProfilePage() {
     if (!user?.email) return;
     const res = await resetPassword(user.email);
     if (res?.error) {
-      setStatus(res.error as string);
+      setStatus(res.error.message);
     } else {
       setStatus("Password reset email sent");
     }
