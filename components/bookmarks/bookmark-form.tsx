@@ -38,6 +38,7 @@ export function BookmarkForm({ onSuccess, onCancel }: BookmarkFormProps) {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<BookmarkFormData>({
     resolver: zodResolver(bookmarkSchema),
     defaultValues: {
@@ -62,6 +63,7 @@ export function BookmarkForm({ onSuccess, onCancel }: BookmarkFormProps) {
       if (result.error) {
         setError(result.error);
       } else {
+        reset();
         onSuccess();
       }
     } catch (err) {
