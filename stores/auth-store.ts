@@ -5,17 +5,14 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface AuthStore extends AuthState {
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: AuthError | null }>
+  signInWithGoogle: () => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error: AuthError | null }>
   initializeAuth: () => Promise<void>
-  updateDisplayName: (displayName: string) => Promise<{ error: AuthError | null }>
 }
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       loading: true,
       error: null,
@@ -35,7 +32,7 @@ export const useAuthStore = create<AuthStore>()(
             const user: User = {
               id: session.user.id,
               email: session.user.email!,
-              display_name: session.user.user_metadata?.display_name,
+              display_name: session.user.user_metadata?.display_name || session.user.user_metadata?.full_name,
               created_at: session.user.created_at
             }
             set({ user, loading: false, error: null })
@@ -50,62 +47,14 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      updateDisplayName: async (displayName: string) => {
-        try {
-          await supabase.auth.updateUser({ data: { display_name: displayName } })
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.user) {
-            const user: User = {
-              id: session.user.id,
-              email: session.user.email!,
-              display_name: session.user.user_metadata?.display_name,
-              created_at: session.user.created_at
-            }
-            set({ user, loading: false, error: null })
-            return { error: null }
-          }
-          return { error: null }
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : 'Update failed'
-          set({ error: msg, loading: false })
-          return { error: new AuthError(msg) }
-        }
-      },
-
-      signIn: async (email: string, password: string) => {
+      signInWithGoogle: async () => {
         try {
           set({ loading: true, error: null })
 
-          const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          })
-
-          if (error) {
-            set({ error: error.message, loading: false })
-            return { error }
-          }
-
-          set({ loading: false })
-          return { error: null }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Sign in failed'
-          set({ error: errorMessage, loading: false })
-          return { error: new AuthError(errorMessage) }
-        }
-      },
-
-      signUp: async (email: string, password: string, displayName?: string) => {
-        try {
-          set({ loading: true, error: null })
-
-          const { error } = await supabase.auth.signUp({
-            email,
-            password,
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
             options: {
-              data: {
-                display_name: displayName
-              }
+              redirectTo: `${window.location.origin}/dashboard`
             }
           })
 
@@ -114,10 +63,9 @@ export const useAuthStore = create<AuthStore>()(
             return { error }
           }
 
-          set({ loading: false })
           return { error: null }
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Sign up failed'
+          const errorMessage = error instanceof Error ? error.message : 'Google sign in failed'
           set({ error: errorMessage, loading: false })
           return { error: new AuthError(errorMessage) }
         }
@@ -130,15 +78,6 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Sign out failed'
           set({ error: errorMessage })
-        }
-      },
-
-      resetPassword: async (email: string) => {
-        try {
-          const { error } = await supabase.auth.resetPasswordForEmail(email)
-          return { error }
-        } catch (error) {
-          return { error: new AuthError(error instanceof Error ? error.message : 'Reset password failed') }
         }
       }
     }),
@@ -157,7 +96,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     const user: User = {
       id: session.user.id,
       email: session.user.email!,
-      display_name: session.user.user_metadata?.display_name,
+      display_name: session.user.user_metadata?.display_name || session.user.user_metadata?.full_name,
       created_at: session.user.created_at
     }
     useAuthStore.setState({ user, loading: false, error: null })
