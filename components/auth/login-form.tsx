@@ -13,8 +13,8 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto p-6 space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold">Welcome</h1>
-        <p className="text-muted-foreground mt-2">Sign in to continue</p>
+        <h1 className="text-3xl font-bold">Bookmark Manager</h1>
+        <p className="text-muted-foreground mt-2">Sign in to save and organize your favorite links</p>
       </div>
 
       {error && (
