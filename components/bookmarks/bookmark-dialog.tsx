@@ -1,30 +1,37 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogTrigger } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { useState } from 'react'
-import { BookmarkForm } from './bookmark-form'
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import { BookmarkForm } from "./bookmark-form";
 
-export function BookmarkDialog() {
-  const [open, setOpen] = useState(false)
+export function BookmarkDialog({
+  buttonSize = "md",
+}: {
+  buttonSize?: "sm" | "md";
+}) {
+  const [open, setOpen] = useState(false);
 
   const handleSuccess = () => {
-    setOpen(false)
-  }
+    setOpen(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={'outline'} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Add Bookmark
-        </Button>
+        {buttonSize === "md" ? (
+          <Button variant={"outline"}>
+            <Plus />
+            Add Bookmark
+          </Button>
+        ) : (
+          <Button size={'icon'} variant={"outline"}>
+            <Plus />
+          </Button>
+        )}
       </DialogTrigger>
-      <BookmarkForm
-        onSuccess={handleSuccess}
-        onCancel={() => setOpen(false)}
-      />
+      <BookmarkForm onSuccess={handleSuccess} onCancel={() => setOpen(false)} />
     </Dialog>
-  )
+  );
 }

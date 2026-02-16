@@ -12,7 +12,7 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center gap-2">
-        <BookmarkDialog />
+        <BookmarkDialog buttonSize="sm" />
         <Link href="/profile">
           <Button aria-label="Profile" size={"icon"} variant={"outline"}>
             <UserIcon />
