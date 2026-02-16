@@ -13,13 +13,15 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
 
   useEffect(() => {
-    fetchBookmarks();
-    subscribeToRealtime();
+    if (user) {
+      fetchBookmarks();
+      subscribeToRealtime();
+    }
 
     return () => {
       unsubscribeFromRealtime();
     };
-  }, [fetchBookmarks, subscribeToRealtime, unsubscribeFromRealtime]);
+  }, [user, fetchBookmarks, subscribeToRealtime, unsubscribeFromRealtime]);
 
   return (
     <ProtectedRoute>

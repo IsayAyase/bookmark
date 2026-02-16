@@ -32,22 +32,39 @@ export const useAppStore = create<BookmarkStore>((set, get) => ({
   sortOrder: 'desc',
   realtimeChannel: null,
 
-  subscribeToRealtime: () => {
+  subscribeToRealtime: async () => {
+    // Unsubscribe from any existing channel first
+    const { realtimeChannel: existingChannel } = get()
+    if (existingChannel) {
+      await supabase.removeChannel(existingChannel)
+    }
+
+    // Get current user for filtering
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      console.log('No user found, skipping realtime subscription')
+      return
+    }
+
+    console.log('Setting up realtime subscription for user:', user.id)
+
     const channel = supabase
-      .channel('bookmarks-changes')
+      .channel(`bookmarks-${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'bookmarks',
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('Realtime event received:', payload)
           const { bookmarks } = get()
           
           if (payload.eventType === 'INSERT') {
             const newBookmark = payload.new as Bookmark
-            // Only add if not already in the list (prevents duplicates from own actions)
+            // Only add if not already in the list (prevents duplicates)
             if (!bookmarks.find(b => b.id === newBookmark.id)) {
               set({ bookmarks: [newBookmark, ...bookmarks] })
             }
@@ -57,7 +74,9 @@ export const useAppStore = create<BookmarkStore>((set, get) => ({
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status)
+      })
 
     set({ realtimeChannel: channel })
   },
@@ -125,8 +144,11 @@ export const useAppStore = create<BookmarkStore>((set, get) => ({
         return { error: error.message }
       }
 
-      // Don't manually add to state - let realtime handle it
-      // This ensures consistency across tabs
+      // Add to state immediately for instant UI feedback
+      // Realtime will handle cross-tab sync
+      set(state => ({
+        bookmarks: [data, ...state.bookmarks]
+      }))
 
       return { bookmarkId: data.id }
     } catch (error) {
@@ -147,8 +169,11 @@ export const useAppStore = create<BookmarkStore>((set, get) => ({
         return { error: error.message }
       }
 
-      // Don't manually remove from state - let realtime handle it
-      // This ensures consistency across tabs
+      // Remove from state immediately for instant UI feedback
+      // Realtime will handle cross-tab sync
+      set(state => ({
+        bookmarks: state.bookmarks.filter(b => b.id !== id)
+      }))
 
       return {}
     } catch (error) {
