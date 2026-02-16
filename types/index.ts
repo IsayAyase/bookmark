@@ -1,13 +1,9 @@
-export interface Task {
+export interface Bookmark {
   id: string;
   user_id: string;
   title: string;
-  description?: string;
-  status: 'pending' | 'in-progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
+  url: string;
   created_at: string;
-  updated_at: string;
-  due_date?: string;
 }
 
 export interface User {
@@ -23,12 +19,9 @@ export interface AuthState {
   error: string | null;
 }
 
-export interface TaskFormData {
+export interface BookmarkFormData {
   title: string;
-  description?: string;
-  status: Task['status'];
-  priority: Task['priority'];
-  due_date?: string;
+  url: string;
 }
 
 export interface LoginFormData {
@@ -48,11 +41,9 @@ export interface ApiResponse<T> {
   success: boolean;
 }
 
-export interface TaskFilter {
-  status?: Task['status'];
-  priority?: Task['priority'];
+export interface BookmarkFilter {
   search?: string;
 }
 
-export type TaskSortBy = 'created_at' | 'updated_at' | 'title' | 'due_date' | 'priority';
+export type BookmarkSortBy = 'created_at' | 'title';
 export type SortOrder = 'asc' | 'desc';

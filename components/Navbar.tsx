@@ -1,18 +1,18 @@
 import { UserIcon } from "lucide-react";
 import Link from "next/link";
-import { TaskDialog } from "./tasks/task-dialog";
+import { BookmarkDialog } from "./bookmarks/bookmark-dialog";
 import { Button } from "./ui/button";
 
 export default function Navbar() {
   return (
     <div className="flex items-center justify-between mb-8">
       <Link href="/dashboard">
-        <h1 className="text-3xl font-bold">Task Manager</h1>
-        <p className="text-muted-foreground">Manage your tasks efficiently</p>
+        <h1 className="text-3xl font-bold">Bookmark Manager</h1>
+        <p className="text-muted-foreground">Save and manage your favorite links</p>
       </Link>
 
       <div className="flex items-center gap-2">
-        <TaskDialog />
+        <BookmarkDialog />
         <Link href="/profile">
           <Button aria-label="Profile" size={"icon"} variant={"outline"}>
             <UserIcon />

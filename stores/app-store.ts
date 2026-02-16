@@ -1,34 +1,76 @@
 import { create } from 'zustand'
-import { Task, TaskFilter, TaskSortBy, SortOrder, TaskFormData } from '@/types'
+import { Bookmark, BookmarkFilter, BookmarkSortBy, SortOrder, BookmarkFormData } from '@/types'
 import { supabase } from '@/lib/supabase'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
-interface TaskStore {
-  tasks: Task[]
+interface BookmarkStore {
+  bookmarks: Bookmark[]
   loading: boolean
   error: string | null
-  filter: TaskFilter
-  sortBy: TaskSortBy
+  filter: BookmarkFilter
+  sortBy: BookmarkSortBy
   sortOrder: SortOrder
+  realtimeChannel: RealtimeChannel | null
   
   // Actions
-  fetchTasks: () => Promise<void>
-  createTask: (taskData: TaskFormData) => Promise<{ error?: string; taskId?: string }>
-  updateTask: (id: string, taskData: Partial<TaskFormData>) => Promise<{ error?: string }>
-  deleteTask: (id: string) => Promise<{ error?: string }>
-  setFilter: (filter: TaskFilter) => void
-  setSorting: (sortBy: TaskSortBy, sortOrder: SortOrder) => void
+  fetchBookmarks: () => Promise<void>
+  createBookmark: (bookmarkData: BookmarkFormData) => Promise<{ error?: string; bookmarkId?: string }>
+  deleteBookmark: (id: string) => Promise<{ error?: string }>
+  setFilter: (filter: BookmarkFilter) => void
+  setSorting: (sortBy: BookmarkSortBy, sortOrder: SortOrder) => void
   clearError: () => void
+  subscribeToRealtime: () => void
+  unsubscribeFromRealtime: () => void
 }
 
-export const useAppStore = create<TaskStore>((set, get) => ({
-  tasks: [],
+export const useAppStore = create<BookmarkStore>((set, get) => ({
+  bookmarks: [],
   loading: false,
   error: null,
   filter: {},
   sortBy: 'created_at',
   sortOrder: 'desc',
+  realtimeChannel: null,
 
-  fetchTasks: async () => {
+  subscribeToRealtime: () => {
+    const channel = supabase
+      .channel('bookmarks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookmarks',
+        },
+        (payload) => {
+          const { bookmarks } = get()
+          
+          if (payload.eventType === 'INSERT') {
+            const newBookmark = payload.new as Bookmark
+            // Only add if not already in the list (prevents duplicates from own actions)
+            if (!bookmarks.find(b => b.id === newBookmark.id)) {
+              set({ bookmarks: [newBookmark, ...bookmarks] })
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deletedBookmark = payload.old as Bookmark
+            set({ bookmarks: bookmarks.filter(b => b.id !== deletedBookmark.id) })
+          }
+        }
+      )
+      .subscribe()
+
+    set({ realtimeChannel: channel })
+  },
+
+  unsubscribeFromRealtime: () => {
+    const { realtimeChannel } = get()
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel)
+      set({ realtimeChannel: null })
+    }
+  },
+
+  fetchBookmarks: async () => {
     try {
       set({ loading: true, error: null })
       
@@ -39,21 +81,9 @@ export const useAppStore = create<TaskStore>((set, get) => ({
       }
 
       let query = supabase
-        .from('tasks')
+        .from('bookmarks')
         .select('*')
         .eq('user_id', user.id)
-
-      // Apply filters
-      const { filter } = get()
-      if (filter.status) {
-        query = query.eq('status', filter.status)
-      }
-      if (filter.priority) {
-        query = query.eq('priority', filter.priority)
-      }
-      if (filter.search) {
-        query = query.ilike('title', `%${filter.search}%`)
-      }
 
       // Apply sorting
       const { sortBy, sortOrder } = get()
@@ -66,16 +96,16 @@ export const useAppStore = create<TaskStore>((set, get) => ({
         return
       }
 
-      set({ tasks: data || [], loading: false })
+      set({ bookmarks: data || [], loading: false })
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch tasks', 
+        error: error instanceof Error ? error.message : 'Failed to fetch bookmarks', 
         loading: false 
       })
     }
   },
 
-  createTask: async (taskData: TaskFormData) => {
+  createBookmark: async (bookmarkData: BookmarkFormData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -83,9 +113,9 @@ export const useAppStore = create<TaskStore>((set, get) => ({
       }
 
       const { data, error } = await supabase
-        .from('tasks')
+        .from('bookmarks')
         .insert({
-          ...taskData,
+          ...bookmarkData,
           user_id: user.id
         })
         .select()
@@ -95,52 +125,21 @@ export const useAppStore = create<TaskStore>((set, get) => ({
         return { error: error.message }
       }
 
-      set(state => ({
-        tasks: [data, ...state.tasks]
-      }))
+      // Don't manually add to state - let realtime handle it
+      // This ensures consistency across tabs
 
-      return { taskId: data.id }
+      return { bookmarkId: data.id }
     } catch (error) {
       return { 
-        error: error instanceof Error ? error.message : 'Failed to create task' 
+        error: error instanceof Error ? error.message : 'Failed to create bookmark' 
       }
     }
   },
 
-  updateTask: async (id: string, taskData: Partial<TaskFormData>) => {
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({
-          ...taskData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        return { error: error.message }
-      }
-
-      set(state => ({
-        tasks: state.tasks.map(task => 
-          task.id === id ? data : task
-        )
-      }))
-
-      return {}
-    } catch (error) {
-      return { 
-        error: error instanceof Error ? error.message : 'Failed to update task' 
-      }
-    }
-  },
-
-  deleteTask: async (id: string) => {
+  deleteBookmark: async (id: string) => {
     try {
       const { error } = await supabase
-        .from('tasks')
+        .from('bookmarks')
         .delete()
         .eq('id', id)
 
@@ -148,26 +147,24 @@ export const useAppStore = create<TaskStore>((set, get) => ({
         return { error: error.message }
       }
 
-      set(state => ({
-        tasks: state.tasks.filter(task => task.id !== id)
-      }))
+      // Don't manually remove from state - let realtime handle it
+      // This ensures consistency across tabs
 
       return {}
     } catch (error) {
       return { 
-        error: error instanceof Error ? error.message : 'Failed to delete task' 
+        error: error instanceof Error ? error.message : 'Failed to delete bookmark' 
       }
     }
   },
 
-  setFilter: (filter: TaskFilter) => {
+  setFilter: (filter: BookmarkFilter) => {
     set({ filter })
-    get().fetchTasks() // Refetch with new filter
   },
 
-  setSorting: (sortBy: TaskSortBy, sortOrder: SortOrder) => {
+  setSorting: (sortBy: BookmarkSortBy, sortOrder: SortOrder) => {
     set({ sortBy, sortOrder })
-    get().fetchTasks() // Refetch with new sorting
+    get().fetchBookmarks() // Refetch with new sorting
   },
 
   clearError: () => {
@@ -176,25 +173,26 @@ export const useAppStore = create<TaskStore>((set, get) => ({
 }))
 
 // Computed values
-export const useFilteredTasks = () => {
-  const tasks = useAppStore(state => state.tasks)
+export const useFilteredBookmarks = () => {
+  const bookmarks = useAppStore(state => state.bookmarks)
   const filter = useAppStore(state => state.filter)
   
-  return tasks.filter(task => {
-    if (filter.status && task.status !== filter.status) return false
-    if (filter.priority && task.priority !== filter.priority) return false
-    if (filter.search && !task.title.toLowerCase().includes(filter.search.toLowerCase())) return false
+  return bookmarks.filter(bookmark => {
+    if (filter.search) {
+      const searchLower = filter.search.toLowerCase()
+      return (
+        bookmark.title.toLowerCase().includes(searchLower) ||
+        bookmark.url.toLowerCase().includes(searchLower)
+      )
+    }
     return true
   })
 }
 
-export const useTaskStats = () => {
-  const tasks = useAppStore(state => state.tasks)
+export const useBookmarkStats = () => {
+  const bookmarks = useAppStore(state => state.bookmarks)
   
   return {
-    total: tasks.length,
-    pending: tasks.filter(t => t.status === 'pending').length,
-    inProgress: tasks.filter(t => t.status === 'in-progress').length,
-    completed: tasks.filter(t => t.status === 'completed').length
+    total: bookmarks.length
   }
 }
